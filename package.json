@@ -18,8 +18,8 @@
     "Response",
 		"Events"
 	],
-	"main": "./dist/tsc/src/main.js",
-	"types": "./dist/tsc/src/main.d.ts",
+	"main": "./dist/main.js",
+	"types": "./dist/main.d.ts",
 	"scripts": {
 		"prepublish": "yarn clean && yarn build",
 		"lint": "eslint src/ --ext .js,.ts",

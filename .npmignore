@@ -1,0 +1,26 @@
+# TypeScript code
+/src/
+
+# Compiled output
+/node_modules
+/docs
+/coverage
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# IDEs and editors
+/.idea
+/.settings
+/.vscode
+.editorconfig
+
+# Project config files
+tsconfig.json
+.eslintrc.js
+jest.config.js
+.prettierrc
+typedoc.json
