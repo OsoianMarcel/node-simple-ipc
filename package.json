@@ -1,0 +1,50 @@
+{
+	"name": "node-simple-ipc",
+	"version": "0.0.1",
+	"description": "A Node.Js module for local Inter Process Communication",
+	"author": "Osoian Marcel <osoian.marcel.d@gmail.com>",
+	"homepage": "https://github.com/OsoianMarcel/node-simple-ipc",
+	"bugs": {
+		"url": "https://github.com/OsoianMarcel/node-simple-ipc/issues"
+	},
+	"repository": "https://github.com/OsoianMarcel/node-simple-ipc",
+	"license": "MIT",
+	"keywords": [
+		"Node",
+		"IPC",
+		"Process",
+    "Communication",
+    "Request",
+    "Response",
+		"Events"
+	],
+	"main": "./dist/tsc/src/main.js",
+	"types": "./dist/tsc/src/main.d.ts",
+	"scripts": {
+		"prepublish": "yarn clean && yarn build",
+		"lint": "eslint src/ --ext .js,.ts",
+		"test": "jest",
+		"clean": "rm -rf dist docs coverage",
+		"ts-node": "ts-node",
+		"docs": "typedoc",
+		"build": "tsc -p tsconfig.json"
+	},
+	"devDependencies": {
+		"@types/jest": "^27.4.0",
+		"@types/node": "^17.0.12",
+		"@typescript-eslint/eslint-plugin": "^5.10.1",
+		"@typescript-eslint/parser": "^5.10.1",
+		"eslint": "^8.7.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-jest": "^26.1.3",
+		"eslint-plugin-prettier": "^4.0.0",
+		"jest": "^27.4.7",
+		"prettier": "^2.6.0",
+		"ts-jest": "^27.1.3",
+		"ts-node": "^10.4.0",
+		"typedoc": "^0.22.11",
+		"typedoc-plugin-markdown": "^3.11.13",
+		"typescript": "^4.5.5"
+	},
+	"dependencies": {}
+}

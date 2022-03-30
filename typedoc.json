@@ -1,0 +1,11 @@
+{
+	"plugin": "typedoc-plugin-markdown",
+	"entryPoints": "src/main.ts",
+	"out": "docs",
+	"excludePrivate": true,
+	"excludeInternal": true,
+	"excludeProtected": true,
+	"excludeExternals": true,
+	"externalPattern": "src/types/external/**/*",
+	"readme": "none"
+}
