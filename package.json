@@ -1,6 +1,6 @@
 {
 	"name": "node-simple-ipc",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"description": "A Node.Js module for local Inter Process Communication",
 	"author": "Osoian Marcel <osoian.marcel.d@gmail.com>",
 	"homepage": "https://github.com/OsoianMarcel/node-simple-ipc",
@@ -12,11 +12,13 @@
 	"keywords": [
 		"Node",
 		"IPC",
+    "RPC",
+    "Events",
 		"Process",
-    "Communication",
-    "Request",
-    "Response",
-		"Events"
+		"Communication",
+		"Request",
+		"Response",
+    "Threads"
 	],
 	"main": "./dist/main.js",
 	"types": "./dist/main.d.ts",
