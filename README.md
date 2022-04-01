@@ -2,6 +2,7 @@
 
 A library created on top of Node.js IPC, which simplify communication between master and child processes via RPC and Events.
 
+[![Build Status](https://app.travis-ci.com/OsoianMarcel/node-simple-ipc.svg?branch=main)](https://app.travis-ci.com/OsoianMarcel/node-simple-ipc)
 [![npm version](https://img.shields.io/npm/v/react.svg?style=flat)](https://www.npmjs.com/package/node-simple-ipc)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/OsoianMarcel/node-simple-ipc/blob/main/LICENSE)
 
@@ -12,6 +13,10 @@ Install via npm,
 ```
 npm install node-simple-ipc
 ```
+
+## Docs
+
+See [wiki](https://github.com/OsoianMarcel/node-simple-ipc/wiki/NodeSimpleIpc) pages.
 
 ## Quick Example
 
@@ -68,6 +73,14 @@ master ping response: pong from master
 current time: 1648818853923
 math result: 115
 ```
+
+## To do:
+
+- More code examples.
+- To throw NotFound error when RPC not found.
+- To throw an error when RPC already exists.
+- Allow to set default RPC timeout for all endpoints at once (current value: 30 seconds).
+- Create unit tests for the class NodeSimpleIpc.
 
 ## Contribute
 

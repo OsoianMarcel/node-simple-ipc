@@ -1,11 +1,14 @@
 {
-	"plugin": "typedoc-plugin-markdown",
+	"plugin": ["typedoc-plugin-markdown", "typedoc-github-wiki-theme"],
 	"entryPoints": "src/main.ts",
-	"out": "docs",
+	"out": "../node-simple-ipc.wiki",
 	"excludePrivate": true,
 	"excludeInternal": true,
 	"excludeProtected": true,
 	"excludeExternals": true,
 	"externalPattern": "src/types/external/**/*",
-	"readme": "none"
+	"readme": "none",
+  "entryDocument": "Home.md",
+  "theme": "github-wiki",
+  "cleanOutputDir": false
 }

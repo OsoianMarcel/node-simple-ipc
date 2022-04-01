@@ -12,13 +12,13 @@
 	"keywords": [
 		"Node",
 		"IPC",
-    "RPC",
-    "Events",
+		"RPC",
+		"Events",
 		"Process",
 		"Communication",
 		"Request",
 		"Response",
-    "Threads"
+		"Threads"
 	],
 	"main": "./dist/main.js",
 	"types": "./dist/main.d.ts",
@@ -45,6 +45,7 @@
 		"ts-jest": "^27.1.3",
 		"ts-node": "^10.4.0",
 		"typedoc": "^0.22.11",
+		"typedoc-github-wiki-theme": "^1.0.0",
 		"typedoc-plugin-markdown": "^3.11.13",
 		"typescript": "^4.5.5"
 	},
