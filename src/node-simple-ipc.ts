@@ -9,6 +9,7 @@ import {
   IpcActOptions,
   IpcHandler,
   EventHandler,
+  NodeSimpleIpcOptions,
 } from './types';
 import {
   serializeError,
@@ -21,23 +22,103 @@ import {
 } from './utils';
 
 export class NodeSimpleIpc {
-  private ipcProc: IpcProcess;
+  private ipcProcess: IpcProcess;
+  private options: Required<NodeSimpleIpcOptions>;
 
+  // Used for emitting and listening of events.
   private eventsEm: EventEmitter;
+
+  // Used for RPC requests.
   private ipcEm: EventEmitter;
+
   private registeredRpcNames: Record<string, number> = {};
+
+  private messageHandler: (msg: unknown) => void;
+
+  private serviceStarted = false;
 
   /**
    * Constructor.
    *
-   * @param ipcProc IPC process (NodeJS.process or ChildProcess). By default "process" will be used.
+   * @param ipcProcess IPC process (NodeJS.process or ChildProcess). By default "process" will be used.
+   * @param options
    */
-  constructor(ipcProc: IpcProcess = process) {
-    this.ipcProc = ipcProc;
-    this.ipcProc.on('message', this.onChildMessage.bind(this));
+  constructor(
+    ipcProcess: IpcProcess = process,
+    options?: NodeSimpleIpcOptions,
+  ) {
+    this.ipcProcess = ipcProcess;
+    this.options = {
+      actTimeout: 30e3,
+      startService: true,
+      ...options,
+    };
+
+    this.messageHandler = this.onIpcMessage.bind(this);
 
     this.ipcEm = new EventEmitter();
     this.eventsEm = new EventEmitter();
+
+    if (this.options.startService) {
+      this.startService();
+    }
+  }
+
+  /**
+   * Starts the service.
+   * By default the service is started on construction.
+   *
+   * @returns Returns a reference to the NodeSimpleIpc.
+   */
+  public startService(): this {
+    if (this.serviceStarted) {
+      return this;
+    }
+
+    this.serviceStarted = true;
+    this.ipcProcess.on('message', this.messageHandler);
+
+    return this;
+  }
+
+  /**
+   * Stops the service.
+   *
+   * @returns Returns a reference to the NodeSimpleIpc.
+   */
+  public stopService(): this {
+    this.serviceStarted = false;
+    this.ipcProcess.off('message', this.messageHandler);
+
+    return this;
+  }
+
+  private onIpcMessage(data: unknown): void {
+    if (isIpcInput(data)) {
+      // If RPC handler not found then send not found error.
+      if (!(data.name in this.registeredRpcNames)) {
+        this.sendOutput(data, {
+          data: undefined,
+          error: {
+            message: `RPC "${data.name}" not found`,
+          },
+        });
+        return;
+      }
+
+      // data.name
+      return;
+    }
+
+    if (isIpcOutput(data)) {
+      this.ipcEm.emit(data.correlationId, data);
+      return;
+    }
+
+    if (isIpcEvent(data)) {
+      this.eventsEm.emit(data.name, data.data);
+      return;
+    }
   }
 
   /**
@@ -51,9 +132,14 @@ export class NodeSimpleIpc {
   public act<D = unknown>(
     name: string,
     data?: unknown,
-    options: IpcActOptions = { timeout: 30e3 },
+    options?: IpcActOptions,
   ): Promise<D> {
     assertValidIpcName(name);
+
+    const finOpts: Required<IpcActOptions> = {
+      timeout: this.options.actTimeout,
+      ...options,
+    };
 
     const correlationId = uniqueId().toString();
     let timeoutId: NodeJS.Timeout;
@@ -79,13 +165,12 @@ export class NodeSimpleIpc {
         this.ipcEm.off(correlationId, listenReply);
         // Throw timeout error
         reject(new TimeoutError(`Reply timeout. IPC name: ${name}.`));
-      }, options.timeout);
+      }, finOpts.timeout);
 
       this.sendInput({
         correlationId,
         name,
         data,
-        type: IpcDataType.Input,
       });
     });
   }
@@ -110,7 +195,7 @@ export class NodeSimpleIpc {
 
     this.registeredRpcNames[name] = 1;
 
-    this.ipcProc.on('message', (message: unknown) => {
+    this.ipcProcess.on('message', (message: unknown) => {
       // Ignore all messages not related to this lib
       if (!isIpcInput(message)) {
         return;
@@ -123,24 +208,14 @@ export class NodeSimpleIpc {
         return;
       }
 
-      const ipcOutput: IpcOutput = {
-        correlationId: ipcInput.correlationId,
-        name: ipcInput.name,
-        type: IpcDataType.Output,
-        data: undefined,
-      };
-
-      // Convert sync function to async
+      // Convert sync function to async for catching all errors
       new Promise((resolve) => resolve(handlerFn(ipcInput.data)))
-        .then((res: unknown) => {
-          this.sendOutput({
-            ...ipcOutput,
-            data: res,
-          });
+        .then((data: unknown) => {
+          this.sendOutput(ipcInput, { data });
         })
         .catch((err: unknown) => {
-          this.sendOutput({
-            ...ipcOutput,
+          this.sendOutput(ipcInput, {
+            data: undefined,
             error: serializeError(err),
           });
         });
@@ -157,7 +232,7 @@ export class NodeSimpleIpc {
    * @returns Returns true if the event has been sent.
    */
   public emit(event: string, data?: unknown): boolean {
-    if (!this.ipcProc.send) return false;
+    if (!this.ipcProcess.send) return false;
 
     const ipcEvent: IpcEvent = {
       type: IpcDataType.Event,
@@ -165,7 +240,7 @@ export class NodeSimpleIpc {
       data,
     };
 
-    return this.ipcProc.send(ipcEvent);
+    return this.ipcProcess.send(ipcEvent);
   }
 
   /**
@@ -207,25 +282,30 @@ export class NodeSimpleIpc {
     return this;
   }
 
-  private sendOutput(output: IpcOutput): boolean {
-    if (!this.ipcProc.send) return false;
+  private sendOutput(
+    input: IpcInput,
+    partialOutput: Pick<IpcOutput, 'data' | 'error'>,
+  ): boolean {
+    if (!this.ipcProcess.send) return false;
 
-    return this.ipcProc.send(output);
+    const output: IpcOutput = {
+      ...partialOutput,
+      correlationId: input.correlationId,
+      name: input.name,
+      type: IpcDataType.Output,
+    };
+
+    return this.ipcProcess.send(output);
   }
 
-  private sendInput(input: IpcInput): boolean {
-    if (!this.ipcProc.send) return false;
+  private sendInput(partialInput: Omit<IpcInput, 'type'>): boolean {
+    if (!this.ipcProcess.send) return false;
 
-    return this.ipcProc.send(input);
-  }
+    const input: IpcInput = {
+      ...partialInput,
+      type: IpcDataType.Input,
+    };
 
-  private onChildMessage(data: unknown): void {
-    if (isIpcOutput(data)) {
-      this.ipcEm.emit(data.correlationId, data);
-    }
-
-    if (isIpcEvent(data)) {
-      this.eventsEm.emit(data.name, data.data);
-    }
+    return this.ipcProcess.send(input);
   }
 }

@@ -1,6 +1,6 @@
 {
 	"name": "node-simple-ipc",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "A Node.Js module for local Inter Process Communication",
 	"author": "Osoian Marcel <osoian.marcel.d@gmail.com>",
 	"homepage": "https://github.com/OsoianMarcel/node-simple-ipc",

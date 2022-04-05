@@ -77,9 +77,8 @@ math result: 115
 ## To do:
 
 - More code examples.
-- To throw NotFound error when RPC not found.
-- Allow to set default RPC timeout for all endpoints at once (current value: 30 seconds).
 - Create unit tests for the class NodeSimpleIpc.
+- Implement graceful exit.
 
 ## Contribute
 

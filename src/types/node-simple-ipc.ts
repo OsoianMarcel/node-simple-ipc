@@ -3,9 +3,16 @@ export interface IpcActOptions {
   timeout?: number;
 }
 
+export interface NodeSimpleIpcOptions {
+  /** Default act timeout in miliseconds. */
+  actTimeout?: number;
+  startService?: boolean;
+}
+
 export interface IpcProcess {
   send?(data: object): boolean;
-  on(message: string, event: unknown): void;
+  on(eventName: string, listener: (data: unknown) => void): void;
+  off(eventName: string, listener: (data: unknown) => void): void;
 }
 
 export type IpcHandler<I = unknown, O = unknown> = (i: I) => O;
