@@ -10,6 +10,7 @@ import {
   IpcHandler,
   EventHandler,
   NodeSimpleIpcOptions,
+  RemoveHandler,
 } from './types';
 import {
   serializeError,
@@ -41,7 +42,7 @@ export class NodeSimpleIpc {
    * Constructor.
    *
    * @param ipcProcess IPC process (NodeJS.process or ChildProcess). By default "process" will be used.
-   * @param options
+   * @param options NodeSimpleIpc options.
    */
   constructor(
     ipcProcess: IpcProcess = process,
@@ -176,16 +177,16 @@ export class NodeSimpleIpc {
   }
 
   /**
-   * Add an endpoint.
+   * Add a RPC.
    *
-   * @param name Endpoint name.
+   * @param name RPC name.
    * @param handlerFn Handler function.
-   * @returns Returns a reference to the NodeSimpleIpc.
+   * @returns Function you can call to remove the RPC.
    */
   public add<I = unknown, O = unknown>(
     name: string,
     handlerFn: IpcHandler<I, O>,
-  ): this {
+  ): RemoveHandler {
     assertValidIpcName(name);
     assertValidIpcHandler(handlerFn);
 
@@ -195,7 +196,7 @@ export class NodeSimpleIpc {
 
     this.registeredRpcNames[name] = 1;
 
-    this.ipcProcess.on('message', (message: unknown) => {
+    const messageListener = (message: unknown): void => {
       // Ignore all messages not related to this lib
       if (!isIpcInput(message)) {
         return;
@@ -219,20 +220,72 @@ export class NodeSimpleIpc {
             error: serializeError(err),
           });
         });
-    });
+    };
 
-    return this;
+    this.ipcProcess.on('message', messageListener);
+
+    return () => {
+      this.ipcProcess.off('message', messageListener);
+    };
   }
 
   /**
-   * Emit an event.
+   * Adds the listener function to the end of the listeners.
    *
    * @param event Event name.
-   * @param data Event data.
-   * @returns Returns true if the event has been sent.
+   * @param handler Listener function.
+   * @returns Function you can call to remove the event handler.
+   */
+  public on<T = unknown>(
+    event: string,
+    handler: EventHandler<T>,
+  ): RemoveHandler {
+    this.eventsEm.on(event, handler);
+
+    return () => {
+      this.eventsEm.off(event, handler);
+    };
+  }
+
+  /**
+   * Adds a one-time listener function for the event. The next time event is triggered, this listener is removed and then invoked.
+   *
+   * @param event Event name.
+   * @param handler Listener function.
+   * @returns Function you can call to remove the event handler.
+   */
+  public once<T = unknown>(
+    event: string,
+    handler: EventHandler<T>,
+  ): RemoveHandler {
+    this.eventsEm.once(event, handler);
+
+    return () => {
+      this.eventsEm.off(event, handler);
+    };
+  }
+
+  /**
+   * Removes the specified listener from the listener array.
+   *
+   * @param event Event name.
+   * @param handler Listener function.
+   * @returns Returns a reference to the NodeSimpleIpc.
+   */
+  public off<T = unknown>(event: string, handler: EventHandler<T>): void {
+    this.eventsEm.off(event, handler);
+  }
+
+  /**
+   * Send an event over IPC.
+   *
+   * @param event Event name.
+   * @param data Event data (optional).
+   * @returns The sending result.
    */
   public emit(event: string, data?: unknown): boolean {
-    if (!this.ipcProcess.send) return false;
+    if (!this.ipcProcess.send)
+      throw new Error('The send() method is not defined.');
 
     const ipcEvent: IpcEvent = {
       type: IpcDataType.Event,
@@ -244,49 +297,18 @@ export class NodeSimpleIpc {
   }
 
   /**
-   * Adds the listener function to the end of the listeners.
+   * Send RPC output properties over IPC.
    *
-   * @param event Event name.
-   * @param handler Listener function.
-   * @returns Returns a reference to the NodeSimpleIpc.
+   * @param input Input properties.
+   * @param partialOutput Output properties (only data and error).
+   * @returns The sending result.
    */
-  public on<T = unknown>(event: string, handler: EventHandler<T>): this {
-    this.eventsEm.on(event, handler);
-
-    return this;
-  }
-
-  /**
-   * Adds a one-time listener function for the event. The next time event is triggered, this listener is removed and then invoked.
-   *
-   * @param event Event name.
-   * @param handler Listener function.
-   * @returns Returns a reference to the NodeSimpleIpc.
-   */
-  public once<T = unknown>(event: string, handler: EventHandler<T>): this {
-    this.eventsEm.once(event, handler);
-
-    return this;
-  }
-
-  /**
-   * Removes the specified listener from the listener array.
-   *
-   * @param event Event name.
-   * @param handler Listener function.
-   * @returns Returns a reference to the NodeSimpleIpc.
-   */
-  public off<T = unknown>(event: string, handler: EventHandler<T>): this {
-    this.eventsEm.off(event, handler);
-
-    return this;
-  }
-
   private sendOutput(
     input: IpcInput,
     partialOutput: Pick<IpcOutput, 'data' | 'error'>,
   ): boolean {
-    if (!this.ipcProcess.send) return false;
+    if (!this.ipcProcess.send)
+      throw new Error('The send() method is not defined.');
 
     const output: IpcOutput = {
       ...partialOutput,
@@ -298,8 +320,15 @@ export class NodeSimpleIpc {
     return this.ipcProcess.send(output);
   }
 
+  /**
+   * Send RPC input properties over IPC.
+   *
+   * @param partialInput Input properties.
+   * @returns The sending result.
+   */
   private sendInput(partialInput: Omit<IpcInput, 'type'>): boolean {
-    if (!this.ipcProcess.send) return false;
+    if (!this.ipcProcess.send)
+      throw new Error('The send() method is not defined.');
 
     const input: IpcInput = {
       ...partialInput,

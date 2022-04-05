@@ -18,3 +18,5 @@ export interface IpcProcess {
 export type IpcHandler<I = unknown, O = unknown> = (i: I) => O;
 
 export type EventHandler<T = unknown> = (data: T) => void;
+
+export type RemoveHandler = () => void;
