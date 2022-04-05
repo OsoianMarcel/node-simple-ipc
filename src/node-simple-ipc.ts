@@ -25,6 +25,7 @@ export class NodeSimpleIpc {
 
   private eventsEm: EventEmitter;
   private ipcEm: EventEmitter;
+  private registeredRpcNames: Record<string, number> = {};
 
   /**
    * Constructor.
@@ -102,6 +103,12 @@ export class NodeSimpleIpc {
   ): this {
     assertValidIpcName(name);
     assertValidIpcHandler(handlerFn);
+
+    if (name in this.registeredRpcNames) {
+      throw new Error(`The RPC named "${name}" already exists.`);
+    }
+
+    this.registeredRpcNames[name] = 1;
 
     this.ipcProc.on('message', (message: unknown) => {
       // Ignore all messages not related to this lib

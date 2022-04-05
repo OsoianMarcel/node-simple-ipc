@@ -44,7 +44,7 @@ rpc.act('math_add', [5, 10, 100]).then((result) => {
 rpc.add('ping_master', () => 'pong from master');
 ```
 
-child.js - the child porcess spawned from the master:
+child.js - the child process spawned from the master:
 
 ```javascript
 const { NodeSimpleIpc } = require('node-simple-ipc');
@@ -78,7 +78,6 @@ math result: 115
 
 - More code examples.
 - To throw NotFound error when RPC not found.
-- To throw an error when RPC already exists.
 - Allow to set default RPC timeout for all endpoints at once (current value: 30 seconds).
 - Create unit tests for the class NodeSimpleIpc.
 
