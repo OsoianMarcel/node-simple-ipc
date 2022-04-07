@@ -77,7 +77,6 @@ math result: 115
 ## To do:
 
 - More code examples.
-- Create unit tests for the class NodeSimpleIpc.
 - Implement graceful exit.
 
 ## Contribute

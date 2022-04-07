@@ -7,7 +7,7 @@ describe('uniqueId()', function () {
     for (let i = 0; i < 10; i++) {
       const next = uniqueId();
 
-      expect(next).toBeGreaterThan(prev);
+      expect(next).not.toEqual(prev);
 
       prev = next;
     }

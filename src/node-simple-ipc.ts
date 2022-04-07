@@ -26,17 +26,17 @@ export class NodeSimpleIpc {
   private ipcProcess: IpcProcess;
   private options: Required<NodeSimpleIpcOptions>;
 
-  // Used for emitting and listening of events.
+  // Event emitter used for RPC responses.
+  private rpcEm: EventEmitter;
+
+  // The event emitter used for events is isolated to make sure the RPC logic is not affected.
   private eventsEm: EventEmitter;
 
-  // Used for RPC requests.
-  private ipcEm: EventEmitter;
-
+  // Store registered RPC endpoint names.
   private registeredRpcNames: Record<string, number> = {};
 
+  // IPC message handler used for IPC message listener.
   private messageHandler: (msg: unknown) => void;
-
-  private serviceStarted = false;
 
   /**
    * Constructor.
@@ -57,41 +57,10 @@ export class NodeSimpleIpc {
 
     this.messageHandler = this.onIpcMessage.bind(this);
 
-    this.ipcEm = new EventEmitter();
+    this.rpcEm = new EventEmitter();
     this.eventsEm = new EventEmitter();
 
-    if (this.options.startService) {
-      this.startService();
-    }
-  }
-
-  /**
-   * Starts the service.
-   * By default the service is started on construction.
-   *
-   * @returns Returns a reference to the NodeSimpleIpc.
-   */
-  public startService(): this {
-    if (this.serviceStarted) {
-      return this;
-    }
-
-    this.serviceStarted = true;
     this.ipcProcess.on('message', this.messageHandler);
-
-    return this;
-  }
-
-  /**
-   * Stops the service.
-   *
-   * @returns Returns a reference to the NodeSimpleIpc.
-   */
-  public stopService(): this {
-    this.serviceStarted = false;
-    this.ipcProcess.off('message', this.messageHandler);
-
-    return this;
   }
 
   private onIpcMessage(data: unknown): void {
@@ -101,7 +70,7 @@ export class NodeSimpleIpc {
         this.sendOutput(data, {
           data: undefined,
           error: {
-            message: `RPC "${data.name}" not found`,
+            message: `RPC "${data.name}" not found.`,
           },
         });
         return;
@@ -112,7 +81,7 @@ export class NodeSimpleIpc {
     }
 
     if (isIpcOutput(data)) {
-      this.ipcEm.emit(data.correlationId, data);
+      this.rpcEm.emit(data.correlationId, data);
       return;
     }
 
@@ -123,9 +92,9 @@ export class NodeSimpleIpc {
   }
 
   /**
-   * Start a request.
+   * Start a RPC request.
    *
-   * @param name Endpoint name.
+   * @param name RPC name.
    * @param data Request data (optional).
    * @param options Request options.
    * @returns The response.
@@ -158,12 +127,12 @@ export class NodeSimpleIpc {
       };
 
       // Register event handler
-      this.ipcEm.once(correlationId, listenReply);
+      this.rpcEm.once(correlationId, listenReply);
 
       // Process timeout case
       timeoutId = setTimeout(() => {
         // Remove listener
-        this.ipcEm.off(correlationId, listenReply);
+        this.rpcEm.off(correlationId, listenReply);
         // Throw timeout error
         reject(new TimeoutError(`Reply timeout. IPC name: ${name}.`));
       }, finOpts.timeout);
@@ -177,11 +146,11 @@ export class NodeSimpleIpc {
   }
 
   /**
-   * Add a RPC.
+   * Add a RPC endpoint.
    *
    * @param name RPC name.
    * @param handlerFn Handler function.
-   * @returns Function you can call to remove the RPC.
+   * @returns Function you can call to remove the RPC endpoint.
    */
   public add<I = unknown, O = unknown>(
     name: string,
@@ -226,6 +195,7 @@ export class NodeSimpleIpc {
 
     return () => {
       this.ipcProcess.off('message', messageListener);
+      delete this.registeredRpcNames[name];
     };
   }
 
