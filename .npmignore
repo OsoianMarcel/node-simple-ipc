@@ -24,3 +24,7 @@ tsconfig.json
 jest.config.js
 .prettierrc
 typedoc.json
+.travis.yml
+
+# dist folder
+/dist/examples
