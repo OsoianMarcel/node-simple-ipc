@@ -6,7 +6,6 @@ export interface IpcActOptions {
 export interface NodeSimpleIpcOptions {
   /** Default act timeout in miliseconds. */
   actTimeout?: number;
-  startService?: boolean;
 }
 
 export interface IpcProcess {

@@ -51,7 +51,6 @@ export class NodeSimpleIpc {
     this.ipcProcess = ipcProcess;
     this.options = {
       actTimeout: 30e3,
-      startService: true,
       ...options,
     };
 
@@ -111,7 +110,7 @@ export class NodeSimpleIpc {
       ...options,
     };
 
-    const correlationId = uniqueId().toString();
+    const correlationId = uniqueId();
     let timeoutId: NodeJS.Timeout;
 
     return new Promise((resolve, reject) => {
